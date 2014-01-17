@@ -5,7 +5,7 @@ var privateSendMessageEvent		= "sendMessEv";
 var privateReceiveMessageEvent	= "recMessEv";
 var privateInfoUpdateEvent		= "infoUpEv";
 
-var TEST_NUM = 1000;
+var TEST_NUM = 10000;
 
 var socketList = [];
 
