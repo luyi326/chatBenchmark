@@ -1,7 +1,12 @@
+var util = require("util");
 var socketIOClient = require("socket.io-client");
-exports.client = newSocketIOClient;
 
-exports.createNewClient = function (userID, receiver) {
+//Private Chat Events
+var privateSendMessageEvent		= "sendMessEv";
+var privateReceiveMessageEvent	= "recMessEv";
+var privateInfoUpdateEvent		= "infoUpEv";
+
+exports.createNewClient = function (userID, receiver, callback) {
 	this.userID = userID;
 	var socket = new socketIOClient.connect('localhost/privateChat', {
 		"port": 4443,
@@ -12,6 +17,12 @@ exports.createNewClient = function (userID, receiver) {
 		socket.emit(privateInfoUpdateEvent, {
 			"userID": userID,
 			"receiverID": receiver
+		}, function (ack) {
+			if (ack == 33) {
+				callback(null, true);
+			} else {
+				callback(new Error("set user failed"), false);
+			}
 		});
 	});
 	return socket;
