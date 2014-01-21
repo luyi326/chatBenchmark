@@ -6,8 +6,8 @@ var privateSendMessageEvent		= "sendMessEv";
 var privateReceiveMessageEvent	= "recMessEv";
 var privateInfoUpdateEvent		= "infoUpEv";
 
-var TEST_NUM = 2000;
-var TEST_SEG = 300;
+var TEST_NUM = 10000;
+var TEST_SEG = 1000;
 
 var endSig = false;
 var i = 0;

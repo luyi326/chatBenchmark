@@ -14,6 +14,7 @@ exports.createNewClient = function (userID, receiver, callback) {
 	});
 	socket.on('connect', function () {
 		console.log(util.format("tester %s connected", userID));
+		// callback(null, true);
 		socket.emit(privateInfoUpdateEvent, {
 			"userID": userID,
 			"receiverID": receiver
