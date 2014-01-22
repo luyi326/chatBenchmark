@@ -6,11 +6,11 @@ var privateSendMessageEvent		= "sendMessEv";
 var privateReceiveMessageEvent	= "recMessEv";
 var privateInfoUpdateEvent		= "infoUpEv";
 
-var TEST_NUM = 500;
-var TEST_SEG = 100;
+var TEST_NUM = 10000;
+var TEST_SEG = 1000;
 var WAIT_TIME_LOW_B = 0;
-var WAIT_TIME_UP_B = 3;
-var CHANCE_SEND_MESSAGE = 0.5;
+var WAIT_TIME_UP_B = 10;
+var CHANCE_SEND_MESSAGE = 0.35;
 
 // STAGE I
 console.log("STAGE I kick start");
@@ -27,8 +27,9 @@ var messageCount = 0;
 	var endTime = [];
 	var loop = function () {
 		if (endSig) {
-			console.log(log);
-			console.log("Total time: %ds %dns", endTime[0], endTime[1]);
+			// console.log(log);
+			// console.log("Total time: %ds %dns", endTime[0], endTime[1]);
+			log += util.format("Total time: %ss\n", endTime[0] + endTime[1]/1000000000);
 			console.log("exiting STAGE I");
 			stage2();
 			return;
@@ -60,6 +61,9 @@ var messageCount = 0;
 							if(!data || data.length == 0) return;
 							messageCount++;
 							console.log(myI + " received message , total receive til now: " + messageCount);
+							if (messageCount == totalMessage) {
+								fanale();
+							}
 						});
 					}
 					// console.log("pushing");
@@ -71,7 +75,8 @@ var messageCount = 0;
 					if (counter == total) {
 						timer[i] = process.hrtime(timer[i]);
 						if (endSig) endTime = process.hrtime(startTime);
-						log += "loop " + i + ": total: " + total + " err: " + failed + " total time: " + timer[i][0] + "s and " + timer[i][1] + "ns\n";
+						var timeInSecond = timer[i][0] + timer[i][1]/1000000000;
+						log += "loop " + i + ": total: " + total + " err: " + failed + " total time: " + timeInSecond + "s\n";
 						i++;
 						next();
 					}
@@ -93,19 +98,29 @@ var messageCount = 0;
 //STAGE II
 var shouldSendList = [];
 var sendTimeOut = [];
+var totalMessage = 0;
+var totalDelay = 0;
 var stage2 = function() {
 	console.log("ENTER STAGE II, generating random events...");
-	for (var i = 0; i < TEST_NUM; i++) {
-		if (Math.round(Math.random()) > CHANCE_SEND_MESSAGE) shouldSendList.push(true);
-		else shouldSendList.push(false);
-	}
 	for (var i = 0; i < TEST_NUM*3; i++) {
-		sendTimeOut.push(parseInt((Math.random()*(WAIT_TIME_UP_B - WAIT_TIME_LOW_B) + WAIT_TIME_LOW_B).toFixed(2))*1000); //times 1000 to convert it to millisecond for the good of setTimeout
+		sendTimeOut.push(parseFloat((Math.random()*(WAIT_TIME_UP_B - WAIT_TIME_LOW_B) + WAIT_TIME_LOW_B).toFixed(2))*1000); //times 1000 to convert it to millisecond for the good of setTimeout
 	}
+	for (var i = 0; i < TEST_NUM; i++) {
+		if (Math.random() < CHANCE_SEND_MESSAGE) shouldSendList.push(true);
+		else shouldSendList.push(false);
+		totalMessage += shouldSendList[i];
+		totalDelay += shouldSendList[i] * (sendTimeOut[i*3] + sendTimeOut[i*3+1] + sendTimeOut[i*3+2]);
+	}
+	totalMessage *= 3;
+
 	console.log("events generated, proceed to STAGE III");
+	stage3();
 };
 
 // STAGE III
+var startTime = [];
+var endTime = [];
+var startedFlag = false;
 var stage3 = function () {
 	console.log("ENTER STAGE III");
 	// console.log("total sockets in list: " + socketList.length);
@@ -114,27 +129,57 @@ var stage3 = function () {
 			var myIndex = index;
 			var myID = parseInt(myIndex) + 1;
 			if (!shouldSendList[myIndex]) return;
-			setTimeout(socketList[myIndex].emit(privateSendMessageEvent, {
+			if (!startedFlag) {
+				startedFlag = true;
+				startTime = process.hrtime();
+			}
+			setTimeout(function () {
+				socketList[myIndex].emit(privateSendMessageEvent, {
 						"content": "tester" + myID + " to tester" + (socketList[myIndex].receiver + " 1"),
 						"sender" : myIndex+1,
 						"to": socketList[myIndex].receiver
 					}, function (ack) {
 						console.log(myID + " received ack: " + ack);
-				}), sendTimeOut[myIndex*3]);
-			setTimeout(socketList[myIndex].emit(privateSendMessageEvent, {
+				})
+			}, sendTimeOut[myIndex*3]);
+
+			setTimeout(function () {
+				socketList[myIndex].emit(privateSendMessageEvent, {
 						"content": "tester" + myID + " to tester" + (socketList[myIndex].receiver + " 2"),
 						"sender" : myIndex+1,
 						"to": socketList[myIndex].receiver
 					}, function (ack) {
 						console.log(myID + " received ack: " + ack);
-				}), sendTimeOut[myIndex*3+1]);
-			setTimeout(socketList[myIndex].emit(privateSendMessageEvent, {
+				})
+			}, sendTimeOut[myIndex*3+1]);
+
+			setTimeout(function () {
+				socketList[myIndex].emit(privateSendMessageEvent, {
 						"content": "tester" + myID + " to tester" + (socketList[myIndex].receiver + " 3"),
 						"sender" : myIndex+1,
 						"to": socketList[myIndex].receiver
 					}, function (ack) {
 						console.log(myID + " received ack: " + ack);
-				}), sendTimeOut[myIndex*3+2]);
+				})
+			}, sendTimeOut[myIndex*3+2]);
 		})();
 	}
+};
+
+//STAGE IV
+// FANALE
+var fanale = function () {
+	endTime = process.hrtime(startTime);
+	console.log("");
+	console.log("connection time: ");
+	console.log(log);
+	console.log("message time: ");
+	console.log("Total message is " + totalMessage);
+	console.log("Planed delay avg is " + totalDelay/1000/totalMessage + "s");
+	console.log("Final delay is %ds", endTime[0] + endTime[1]/1000000000);
+	var delta = endTime[0] + endTime[1]/1000000000 - totalDelay/1000/totalMessage;
+	console.log("Delay dalta :" + delta);
+	// console.log(sendTimeOut);
+	console.log(totalDelay);
+	console.log = function (args) {};
 };
