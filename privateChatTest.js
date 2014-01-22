@@ -173,6 +173,7 @@ var fanale = function () {
 	console.log("");
 	console.log("connection time: ");
 	console.log(log);
+	console.log("Total of " + TEST_NUM + " users are online, " + TEST_SEG + " per segment");
 	console.log("message time: ");
 	console.log("delay lower bound: " + WAIT_TIME_LOW_B + " time upper bound: " + WAIT_TIME_UP_B);
 	console.log(CHANCE_SEND_MESSAGE*100 + "% of users are sending data");
