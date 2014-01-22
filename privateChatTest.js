@@ -120,6 +120,7 @@ var stage2 = function() {
 // STAGE III
 var startTime = [];
 var endTime = [];
+var biasCorrectionTime = [];
 var startedFlag = false;
 var stage3 = function () {
 	console.log("ENTER STAGE III");
@@ -128,6 +129,7 @@ var stage3 = function () {
 		(function () {
 			var myIndex = index;
 			var myID = parseInt(myIndex) + 1;
+			if (index == socketList.length - 1) biasCorrectionTime = process.hrtime(startTime);
 			if (!shouldSendList[myIndex]) return;
 			if (!startedFlag) {
 				startedFlag = true;
@@ -177,7 +179,8 @@ var fanale = function () {
 	console.log("Total message is " + totalMessage);
 	console.log("Planed delay avg is " + totalDelay/1000/totalMessage + "s");
 	console.log("Final delay is %ds", endTime[0] + endTime[1]/1000000000);
-	var delta = endTime[0] + endTime[1]/1000000000 - totalDelay/1000/totalMessage;
+	console.log("Delay bias is %ds", biasCorrectionTime[0] + biasCorrectionTime[1]/1000000000);
+	var delta = endTime[0] + endTime[1]/1000000000 - totalDelay/1000/totalMessage - (biasCorrectionTime[0] + biasCorrectionTime[1]/1000000000);
 	console.log("Delay dalta :" + delta);
 	// console.log(sendTimeOut);
 	console.log(totalDelay);
