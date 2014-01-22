@@ -95,10 +95,12 @@ var shouldSendList = [];
 var sendTimeOut = [];
 var stage2 = function() {
 	console.log("ENTER STAGE II, generating random events...");
-	for (var i = 0; i < TEST_NUM*3; i++) {
+	for (var i = 0; i < TEST_NUM; i++) {
 		if (Math.round(Math.random()) > CHANCE_SEND_MESSAGE) shouldSendList.push(true);
 		else shouldSendList.push(false);
-		sendTimeOut.push((Math.random()*(WAIT_TIME_UP_B - WAIT_TIME_LOW_B) + WAIT_TIME_LOW_B).toFixed(2));
+	}
+	for (var i = 0; i < TEST_NUM*3; i++) {
+		sendTimeOut.push(parseInt((Math.random()*(WAIT_TIME_UP_B - WAIT_TIME_LOW_B) + WAIT_TIME_LOW_B).toFixed(2))*1000); //times 1000 to convert it to millisecond for the good of setTimeout
 	}
 	console.log("events generated, proceed to STAGE III");
 };
@@ -111,27 +113,28 @@ var stage3 = function () {
 		(function () {
 			var myIndex = index;
 			var myID = parseInt(myIndex) + 1;
-			socketList[myIndex].emit(privateSendMessageEvent, {
-				"content": "tester" + myID + " to tester" + (socketList[myIndex].receiver + " 1"),
-				"sender" : myIndex+1,
-				"to": socketList[myIndex].receiver
-			}, function (ack) {
-				console.log(myID + " received ack: " + ack);
-			});
-			socketList[myIndex].emit(privateSendMessageEvent, {
-				"content": "tester" + myID + " to tester" + (socketList[myIndex].receiver + " 2"),
-				"sender" : myIndex+1,
-				"to": socketList[myIndex].receiver
-			}, function (ack) {
-				console.log(myID + " received ack: " + ack);
-			});
-			socketList[myIndex].emit(privateSendMessageEvent, {
-				"content": "tester" + myID + " to tester" + (socketList[myIndex].receiver + " 3"),
-				"sender" : myIndex+1,
-				"to": socketList[myIndex].receiver
-			}, function (ack) {
-				console.log(myID + " received ack: " + ack);
-			});
+			if (!shouldSendList[myIndex]) return;
+			setTimeout(socketList[myIndex].emit(privateSendMessageEvent, {
+						"content": "tester" + myID + " to tester" + (socketList[myIndex].receiver + " 1"),
+						"sender" : myIndex+1,
+						"to": socketList[myIndex].receiver
+					}, function (ack) {
+						console.log(myID + " received ack: " + ack);
+				}), sendTimeOut[myIndex*3]);
+			setTimeout(socketList[myIndex].emit(privateSendMessageEvent, {
+						"content": "tester" + myID + " to tester" + (socketList[myIndex].receiver + " 2"),
+						"sender" : myIndex+1,
+						"to": socketList[myIndex].receiver
+					}, function (ack) {
+						console.log(myID + " received ack: " + ack);
+				}), sendTimeOut[myIndex*3+1]);
+			setTimeout(socketList[myIndex].emit(privateSendMessageEvent, {
+						"content": "tester" + myID + " to tester" + (socketList[myIndex].receiver + " 3"),
+						"sender" : myIndex+1,
+						"to": socketList[myIndex].receiver
+					}, function (ack) {
+						console.log(myID + " received ack: " + ack);
+				}), sendTimeOut[myIndex*3+2]);
 		})();
 	}
 };
