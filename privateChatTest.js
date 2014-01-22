@@ -8,19 +8,27 @@ var privateInfoUpdateEvent		= "infoUpEv";
 
 var TEST_NUM = 500;
 var TEST_SEG = 100;
+var WAIT_TIME_LOW_B = 0;
+var WAIT_TIME_UP_B = 3;
+var CHANCE_SEND_MESSAGE = 0.5;
 
 // STAGE I
 console.log("STAGE I kick start");
 var endSig = false;
 var i = 0;
 var log = "";
+
 var socketList = [];
 var messageCount = 0;
 
 (function () {
-		var loop = function () {
+	var timer = [];
+	var startTime = [];
+	var endTime = [];
+	var loop = function () {
 		if (endSig) {
 			console.log(log);
+			console.log("Total time: %ds %dns", endTime[0], endTime[1]);
 			console.log("exiting STAGE I");
 			stage2();
 			return;
@@ -34,6 +42,8 @@ var messageCount = 0;
 
 		var counter = 0;
 		var failed = 0;
+		timer.push(process.hrtime());
+		if (i == 0) startTime = timer[0];
 		for (var j = start; j <= end; j++) {
 			(function () {
 				var receiver = j;
@@ -59,7 +69,9 @@ var messageCount = 0;
 					counter++;
 					var total = end - start + 1;
 					if (counter == total) {
-						log += "loop " + i + ": total: " + total + " err: " + failed + "\n";
+						timer[i] = process.hrtime(timer[i]);
+						if (endSig) endTime = process.hrtime(startTime);
+						log += "loop " + i + ": total: " + total + " err: " + failed + " total time: " + timer[i][0] + "s and " + timer[i][1] + "ns\n";
 						i++;
 						next();
 					}
@@ -78,9 +90,22 @@ var messageCount = 0;
 
 })();
 
-// STAGE II
-var stage2 = function () {
-	console.log("ENTER STAGE II");
+//STAGE II
+var shouldSendList = [];
+var sendTimeOut = [];
+var stage2 = function() {
+	console.log("ENTER STAGE II, generating random events...");
+	for (var i = 0; i < TEST_NUM*3; i++) {
+		if (Math.round(Math.random()) > CHANCE_SEND_MESSAGE) shouldSendList.push(true);
+		else shouldSendList.push(false);
+		sendTimeOut.push((Math.random()*(WAIT_TIME_UP_B - WAIT_TIME_LOW_B) + WAIT_TIME_LOW_B).toFixed(2));
+	}
+	console.log("events generated, proceed to STAGE III");
+};
+
+// STAGE III
+var stage3 = function () {
+	console.log("ENTER STAGE III");
 	// console.log("total sockets in list: " + socketList.length);
 	for (var index in socketList) {
 		(function () {
